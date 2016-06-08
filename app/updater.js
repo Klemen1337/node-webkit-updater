@@ -77,6 +77,11 @@ updater.prototype.download = function(newManifest, cb, statusCallback){
   var destinationPath = path.join(this.options.temporaryDirectory, filename);
   var file = fs.createWriteStream(destinationPath);
 
+  // If protocol is https
+  if(url.split("://")[0] == "https"){
+    http = require('https');
+  }
+
   var timeout_wrapper = function( req ) {
     return function() {
       downloadRequest.abort();
@@ -308,7 +313,7 @@ var pUnpack = {
         unzip = function(){
           // unzip by C. Spieler (docs: https://www.mkssoftware.com/docs/man1/unzip.1.asp, issues: http://www.info-zip.org/)
           exec( '"' + path.resolve(__dirname, 'tools/unzip.exe') + '" -u -o "' +
-              filename + '" -d "' + destinationDirectory + '" > NUL', function(err){
+              temporaryDirectory + "/" + filename + '" -d "' + destinationDirectory + '" > NUL', function(err){
             if(err){
               return cb(err);
             }
