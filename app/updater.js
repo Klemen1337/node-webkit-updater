@@ -320,14 +320,22 @@ var pUnpack = {
     // Create the directory
     fs.exists(destinationDirectory, function(exists){
       if(exists) {
-        unzip();
+        fs.remove(destinationDirectory, function (err) {
+          if (err) {
+            cb(err);
+          } else {
+            fs.mkdir(destinationDirectory, function () {
+              unzip();
+            });
+          }
+        });
       } else {
         fs.mkdir(destinationDirectory, function(){
-           unzip();
+          unzip();
         });
       }
     });
-   }
+  }
 };
 pUnpack.linux64 = pUnpack.linux32;
 
