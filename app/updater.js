@@ -134,42 +134,6 @@ updater.prototype.download = function(newManifest, cb, statusCallback){
     }
 
   });
-
-
-
-  //var pkg = request(url, function(err, response){
-  //    if(err){
-  //        cb(err);
-  //    }
-  //    if(response && (response.statusCode < 200 || response.statusCode >= 300)){
-  //        pkg.abort();
-  //        return cb(new Error(response.statusCode));
-  //    }
-  //});
-  //pkg.on('response', function(response){
-  //  if(response && response.headers && response.headers['content-length']){
-  //      pkg['content-length'] = response.headers['content-length'];
-  //    }
-  //});
-  //var filename = path.basename(url),
-  //    destinationPath = path.join(this.options.temporaryDirectory, filename);
-  //// download the package to template folder
-  //fs.unlink(path.join(this.options.temporaryDirectory, filename), function(){
-  //  pkg.pipe(fs.createWriteStream(destinationPath));
-  //  pkg.resume();
-  //});
-  //pkg.on('error', cb);
-  //pkg.on('end', appDownloaded);
-  //pkg.pause();
-  //
-  //function appDownloaded(){
-  //  process.nextTick(function(){
-  //    if(pkg.response.statusCode >= 200 && pkg.response.statusCode < 300){
-  //      cb(null, destinationPath);
-  //    }
-  //  });
-  //}
-  //return pkg;
 };
 
 
@@ -222,7 +186,7 @@ updater.prototype.unpack = function(manifest, filename, cb){
  * @param {string} temporaryDirectory
  * @return {string}
  */
-var getZipDestinationDirectory = function(zipPath, temporaryDirectory){
+  var getZipDestinationDirectory = function(zipPath, temporaryDirectory){
     return path.join(temporaryDirectory, path.basename(zipPath, path.extname(zipPath)));
   },
   /**
@@ -343,15 +307,26 @@ var pUnpack = {
    * @private
    */
   linux32: function(filename, cb, manifest, temporaryDirectory){
-    //filename fix
-    exec('tar -zxvf "' + filename + '" >/dev/null',{cwd: temporaryDirectory}, function(err){
-      console.log(arguments);
-      if(err){
-        console.log(err);
-        return cb(err);
+    var destinationDirectory = path.join(temporaryDirectory, getExecPathRelativeToPackage(manifest));
+
+    var unzip = function(){
+      exec('tar -zxvf "' + filename + '" -C "' + getExecPathRelativeToPackage(manifest) + '" >/dev/null',{cwd: temporaryDirectory}, function(err){
+        if(err) cb(err);
+        else cb(null,destinationDirectory);
+      })
+    };
+
+
+    // Create the directory
+    fs.exists(destinationDirectory, function(exists){
+      if(exists) {
+        unzip();
+      } else {
+        fs.mkdir(destinationDirectory, function(){
+           unzip();
+        });
       }
-      cb(null,path.join(temporaryDirectory, getExecPathRelativeToPackage(manifest)));
-    })
+    });
    }
 };
 pUnpack.linux64 = pUnpack.linux32;
