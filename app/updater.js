@@ -1,4 +1,3 @@
-var request = require('request');
 var path = require('path');
 var http = require('http');
 var os = require('os');
@@ -38,29 +37,8 @@ function updater(manifest, options){
  *
  * @param {function} cb - Callback arguments: error, newerVersionExists (`Boolean`), remoteManifest
  */
-updater.prototype.checkNewVersion = function(cb){
-  request.get(this.manifest.manifestUrl, gotManifest.bind(this)); //get manifest from url
-
-  /**
-   * @private
-   */
-  function gotManifest(err, req, data){
-    if(err) {
-      return cb(err);
-    }
-
-    if(req.statusCode < 200 || req.statusCode > 299){
-      return cb(new Error(req.statusCode));
-    }
-
-    try{
-      data = JSON.parse(data);
-    } catch(e){
-      return cb(e)
-    }
-
-    cb(null, semver.gt(data.version, this.manifest.version), data);
-  }
+updater.prototype.checkNewVersion = function(newManifest, cb){
+  cb(null, semver.gt(newManifest.version, this.manifest.version), newManifest);
 };
 
 /**
