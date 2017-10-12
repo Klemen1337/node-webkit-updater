@@ -6,11 +6,12 @@
     "update",
     "autoupdate"
   ],
-  "version": "0.3.3",
+  "version": "0.3.4",
   "author": "Eldar Djafarov <djkojb@gmail.com>",
   "contributors": [
     "Eldar Djafarov <djkojb@gmail.com>",
-    "Adam Lynch <contact@adamlynch.com>"
+    "Adam Lynch <contact@adamlynch.com>",
+    "Klemen Kastelic <klemen@olaii.com>"
   ],
   "main": "./app/updater.js",
   "repository": {
@@ -26,10 +27,7 @@
     "test": "node node_modules/grunt-cli/bin/grunt clean mochaTest"
   },
   "dependencies": {
-    "del": "~0.1.2",
-    "fs-extra": "^0.30.0",
-    "semver": "^5.0.3",
-    "tar.gz": "^0.1.1"
+    "fs-extra": "^4.0.2"
   },
   "devDependencies": {
     "chai": "^1.9.1",

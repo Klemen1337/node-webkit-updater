@@ -4,7 +4,6 @@ var os = require('os');
 var fs = require('fs-extra');
 var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
-var semver = require('semver');
 var timeout = 10000;
 
 var platform = process.platform;
@@ -30,6 +29,36 @@ function updater(manifest, options){
 
 
 /**
+ * Compare new and current version
+ *
+ * Function returns boolean if new version is larger than current version
+ *
+ * @property {string} v1 - Current version from manifest
+ * @property {string} v2 - New version from manifest
+ */
+function isThereNewVersion(v1, v2){
+  if(v1[0] == "v") v1 = v1.substring(1);
+  if(v2[0] == "v") v2 = v2.substring(1);
+  var v1parts = v1.split('.');
+  var v2parts = v2.split('.');
+  var maxLen = Math.max(v1parts.length, v2parts.length);
+  var part1, part2;
+  var cmp = 0;
+
+  for(var i = 0; i < maxLen && !cmp; i++) {
+    part1 = parseInt(v1parts[i], 10) || 0;
+    part2 = parseInt(v2parts[i], 10) || 0;
+    if(part1 < part2)
+      cmp = 1;
+    if(part1 > part2)
+      cmp = -1;
+  }
+
+  return eval('0' + "<" + cmp);
+}
+
+
+/**
  * Will check the latest available version of the application by requesting the manifest specified in `manifestUrl`.
  *
  * The callback will always be called; the second parameter indicates whether or not there's a newer version.
@@ -38,7 +67,7 @@ function updater(manifest, options){
  * @param {function} cb - Callback arguments: error, newerVersionExists (`Boolean`), remoteManifest
  */
 updater.prototype.checkNewVersion = function(newManifest, cb){
-  cb(null, semver.gt(newManifest.version, this.manifest.version), newManifest);
+  cb(null, isThereNewVersion(this.manifest.version, newManifest.version), newManifest);
 };
 
 /**
@@ -202,7 +231,7 @@ var pUnpack = {
     }
 
     if(extension === ".zip"){
-      exec('unzip -xo "' + filename + '" >/dev/null',{ cwd: destination }, function(err){
+      exec('unzip -xo "' + filename + '" > /dev/null',{ cwd: destination }, function(err){
         if(err){
           console.log(err);
           return cb(err);
@@ -288,7 +317,8 @@ var pUnpack = {
     var destinationDirectory = path.join(temporaryDirectory, getExecPathRelativeToPackage(manifest));
 
     var unzip = function(){
-      exec('tar -zxvf "' + filename + '" -C "' + getExecPathRelativeToPackage(manifest) + '" >/dev/null',{cwd: temporaryDirectory}, function(err){
+      //exec('tar -zxvf "' + filename + '" -C "' + getExecPathRelativeToPackage(manifest) + '" > /dev/null',{cwd: temporaryDirectory}, function(err){
+      exec('unzip "' + filename + '" -d "' + getExecPathRelativeToPackage(manifest) + '" > /dev/null',{cwd: temporaryDirectory}, function(err){
         if(err) cb(err);
         else cb(null,destinationDirectory);
       })
@@ -353,10 +383,10 @@ var pRun = {
    */
   linux32: function(appPath, args, options, cb){
     var appExec = path.join(appPath, path.basename(this.getAppExec()));
-    fs.chmodSync(appExec, 0755)
+    fs.chmodSync(appExec, 0755);
     if(!options) options = {};
     options.cwd = appPath;
-    return run(appPath + "/"+path.basename(this.getAppExec()), args, options, cb);
+    return run(appPath + "/" + path.basename(this.getAppExec()), args, options, cb);
   }
 };
 
@@ -391,18 +421,23 @@ var pInstall = {
    * @private
    */
   mac: function(to, cb){
-    fs.copy(this.getAppPath(), to, cb);
+    fs.remove(this.getAppPath() + "/node_modules/", function (err) {
+      fs.copy(this.getAppPath(), to, cb);
+    });
   },
   /**
    * @private
    */
   win: function(to, cb){
     var self = this;
-    fs.copy(self.getAppPath(), to, appCopied);
+
+    fs.remove(this.getAppPath() + "/node_modules/", function (err) {
+      fs.copy(self.getAppPath(), to, appCopied);
+    });
 
     function appCopied(err){
       if(err){
-        return
+        return;
       }
       cb();
     }
@@ -411,7 +446,9 @@ var pInstall = {
    * @private
    */
   linux32: function(to, cb){
-    fs.copy(this.getAppPath(), to, cb);
+    fs.remove(this.getAppPath() + "/node_modules/", function (err) {
+      fs.copy(this.getAppPath(), to, cb);
+    });
   }
 };
 pInstall.linux64 = pInstall.linux32;
